@@ -2,93 +2,145 @@
 
 
 [[projects]]
+  digest = "1:0deddd908b6b4b768cfc272c16ee61e7088a60f7fe2f06c547bd3d8e1f8b8e77"
   name = "github.com/davecgh/go-spew"
   packages = ["spew"]
+  pruneopts = ""
   revision = "8991bc29aa16c548c550c7ff78260e27b9ab7c73"
   version = "v1.1.1"
 
 [[projects]]
+  digest = "1:870d441fe217b8e689d7949fef6e43efbc787e50f200cb1e70dbca9204a1d6be"
   name = "github.com/inconshreveable/mousetrap"
   packages = ["."]
+  pruneopts = ""
   revision = "76626ae9c91c4f2a10f34cad8ce83ea42c93bb75"
   version = "v1.0"
 
 [[projects]]
   branch = "master"
+  digest = "1:754ea068147f1cb1a81320f3c3df9b61e6b7de29d278bea33894825a4fba18fb"
   name = "github.com/lestrrat-go/jwx"
   packages = [
     "internal/base64",
     "jwa",
-    "jwk"
+    "jwk",
   ]
+  pruneopts = ""
   revision = "0e3622ae3e832755f1b52f944b204bcd5309d7d7"
 
 [[projects]]
   branch = "master"
+  digest = "1:816d40e9baad94fd9318634d17e1203cf8209facd490b966660de4ac72b3358a"
   name = "github.com/lestrrat-go/pdebug"
   packages = ["."]
+  pruneopts = ""
   revision = "39f9a71bcabe9432cbdfe4d3d33f41988acd2ce6"
 
 [[projects]]
+  digest = "1:7365acd48986e205ccb8652cc746f09c8b7876030d53710ea6ef7d0bd0dcd7ca"
   name = "github.com/pkg/errors"
   packages = ["."]
+  pruneopts = ""
   revision = "645ef00459ed84a119197bfb8d8205042c6df63d"
   version = "v0.8.0"
 
 [[projects]]
+  digest = "1:256484dbbcd271f9ecebc6795b2df8cad4c458dd0f5fd82a8c2fa0c29f233411"
   name = "github.com/pmezard/go-difflib"
   packages = ["difflib"]
+  pruneopts = ""
   revision = "792786c7400a136282c1664665ae0a8db921c6c2"
   version = "v1.0.0"
 
 [[projects]]
   branch = "master"
+  digest = "1:48a28fd1dbfc8260d3bbc9ba545b40d204b0f781d75f87afac2fe6f7ebca0275"
   name = "github.com/spf13/cobra"
   packages = ["."]
+  pruneopts = ""
   revision = "6fd8e29b07d8242ebe2888060fede5766e240c25"
 
 [[projects]]
+  digest = "1:0a52bcb568386d98f4894575d53ce3e456f56471de6897bb8b9de13c33d9340e"
   name = "github.com/spf13/pflag"
   packages = ["."]
+  pruneopts = ""
   revision = "9a97c102cda95a86cec2345a6f09f55a939babf5"
   version = "v1.0.2"
 
 [[projects]]
+  branch = "master"
+  digest = "1:0acd197b5c8b39b9670a2065466f4526742e4a55305783ca4109fb954fc1fd77"
   name = "github.com/stretchr/testify"
   packages = [
     "assert",
-    "require"
+    "require",
   ]
-  revision = "f35b8ab0b5a2cef36673838d662e249dd9c94686"
-  version = "v1.2.2"
+  pruneopts = ""
+  revision = "e72b029e2a755a1eeb0ee541dd9cc728668edd95"
 
 [[projects]]
   branch = "master"
+  digest = "1:ce49be197922a3f5904b21e457fb1861e351909cd66a9b4d79c5297925c10f66"
   name = "github.com/thales-e-security/xcrypto"
   packages = [
     "pkcs12",
-    "pkcs12/internal/rc2"
+    "pkcs12/internal/rc2",
   ]
+  pruneopts = ""
   revision = "f4483384015a22dd5ea4cd3e4f63828fb6528bcc"
 
 [[projects]]
   branch = "master"
+  digest = "1:90f8aa620559abef3e8222064705e420dcb3498085b20782d128e5fa477b3a89"
   name = "golang.org/x/crypto"
-  packages = ["ssh/terminal"]
-  revision = "614d502a4dac94afa3a6ce146bd1736da82514c6"
+  packages = [
+    "blowfish",
+    "chacha20",
+    "curve25519",
+    "ed25519",
+    "ed25519/internal/edwards25519",
+    "internal/subtle",
+    "poly1305",
+    "ssh",
+    "ssh/internal/bcrypt_pbkdf",
+    "ssh/terminal",
+  ]
+  pruneopts = ""
+  revision = "06a226fb4e3765ef3f48aa2852b401bc7b98e981"
 
 [[projects]]
   branch = "master"
+  digest = "1:79b4fb7cfed68c4d0727858bd32dbe3be4b97ea58e2d767f92287f67810cbc98"
   name = "golang.org/x/sys"
   packages = [
+    "cpu",
     "unix",
-    "windows"
+    "windows",
   ]
+  pruneopts = ""
   revision = "d99a578cf41bfccdeaf48b0845c823a4b8b0ad5e"
+
+[[projects]]
+  branch = "v3"
+  digest = "1:a576995a0e44e1986a8fea110c05920d5f258941a7a02c4717dd7ac486e95bb0"
+  name = "gopkg.in/yaml.v3"
+  packages = ["."]
+  pruneopts = ""
+  revision = "2ff61e1afc866138abf1a8adf3cc89721090ac31"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "45a2b28ad25d90a2dd97ba76fbc4fffd35d024fed56ad677837e013bfba559c0"
+  input-imports = [
+    "github.com/lestrrat-go/jwx/jwk",
+    "github.com/spf13/cobra",
+    "github.com/stretchr/testify/assert",
+    "github.com/stretchr/testify/require",
+    "github.com/thales-e-security/xcrypto/pkcs12",
+    "golang.org/x/crypto/ssh",
+    "golang.org/x/crypto/ssh/terminal",
+  ]
   solver-name = "gps-cdcl"
   solver-version = 1

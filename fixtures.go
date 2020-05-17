@@ -1,10 +1,13 @@
 package keyremix
 
 import (
+	"crypto/dsa"
 	"crypto/ecdsa"
+	"crypto/ed25519"
 	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/rsa"
+	"math/big"
 
 	"log"
 )
@@ -410,8 +413,293 @@ var rsaP12 = []byte{
 	0x9c, 0x02, 0x02, 0x08, 0x00,
 }
 
+var opensshrsa = `-----BEGIN OPENSSH PRIVATE KEY-----
+b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAABFwAAAAdzc2gtcn
+NhAAAAAwEAAQAAAQEAp5wupaqO1qs2FL++KJ2pgfqRk8eb6jZOFz0X2m6UgEdx1aYL0sSW
+rWf4KU3S3MLHZISVel+MzNyJmH2rAyNUC2Ob+KB9mx6Z8zNjj9DA83mmICm9eR9IkWdDFl
+eGQnTQJ5rxPArAD/rssSKORrDpNp0Kig8cJ8b6cUPORRTD9JmPQvWGv27DuAGqL/nNXpzV
+cj8kzac6FNIdL5SQTUf3T7XlN2R/ru5TWHxGYKfWHA4egPjx2B8wkZrhaOlO/uE8I4nMrS
+uxVt2T2a4bRwFCwVzvnaABm/U3hlJ7OCUsefUrA41Kam5LRGjFtkuWFdZsWohKdtsTKkyx
+TrN8kBHU4wAAA8ir8LVmq/C1ZgAAAAdzc2gtcnNhAAABAQCnnC6lqo7WqzYUv74onamB+p
+GTx5vqNk4XPRfabpSAR3HVpgvSxJatZ/gpTdLcwsdkhJV6X4zM3ImYfasDI1QLY5v4oH2b
+HpnzM2OP0MDzeaYgKb15H0iRZ0MWV4ZCdNAnmvE8CsAP+uyxIo5GsOk2nQqKDxwnxvpxQ8
+5FFMP0mY9C9Ya/bsO4Aaov+c1enNVyPyTNpzoU0h0vlJBNR/dPteU3ZH+u7lNYfEZgp9Yc
+Dh6A+PHYHzCRmuFo6U7+4TwjicytK7FW3ZPZrhtHAULBXO+doAGb9TeGUns4JSx59SsDjU
+pqbktEaMW2S5YV1mxaiEp22xMqTLFOs3yQEdTjAAAAAwEAAQAAAQBauMXi8+OmvDtklbiG
+4XfLm+XKOIPjDQvNtkq/95S3rnQmMV868R+hsqH3MWGODnvAo6cI+skKZeCwQm0bILcwBv
+V4aN4z5SdtJQah5FtcLh9GT3F4Kv+rfFoqsKtCM1or5cjnN+Znf+k3o72g88b3wZ7fxXf2
+69PJFOuEJs4+CTNTWDEsUsr9epL5ni4fcwn3wyASKqCp6APYgLhiTB8JNt23ci6DnpHPYp
+wQNzZtVv778MY6TXK0mu5bLi2eiC+1DS2nxFMv5zkkiVI6ekqNM/5aYYjmCpdxhje3RulU
+tYKW9vnTZydCfuF+XDwlRGe7jG8njAP8BqzQlgg3hSsBAAAAgAxLcls/iz3BVsSY5NB2IU
+gkbXQ0I+pmzKK1yksIGxeeS/bLbkXZDheBJ4Gu++rHh5Nm3kZHs8ZQbQFvBUTigc6rD6Oo
+dze2Tl9CWsptzRGlKxcGW8dF57c2gVBrACsU6z7xdoquMUcfz10J6/86oxw6PzE5HkiPzJ
+iSDZW7c/JnAAAAgQDe3D9cXlgtyQS/T86ajH/m4iYcjlSOcQNn+UxTsHNhX/UXPx9A8ujC
+v20g0bQWPAsRFe/aD3E6Q32pP0T7jDuo2Mrnpqk7DSPe5W55FVUPR/9zukAK3dzNaLjkm5
+5JdC9WS6KC4w3VvghM16qH/1B3ADPpCe3EW2aHntP7jEpkYwAAAIEAwIixCbSM3bWeLgpm
+a8y6Z90SL0mz6uBfbzo366XPxuSAv8eHfOpcJCM4j3kIaeXY48j8KMWHNUVc4smiLx0SZv
+5qNUayEkMY9AmZf5HJ9J6qJpcz6v8qUrBvPRky9XFEe5wV0H8bRkPQ0MLCjTNHL+NnSmWf
+VYxgoeFUoiK8dYEAAAAQcmljaGFyZEBhcmFtaW50YQECAw==
+-----END OPENSSH PRIVATE KEY-----
+`
+
+var opensshrsapub = `ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCnnC6lqo7WqzYUv74onamB+pGTx5vqNk4XPRfabpSAR3HVpgvSxJatZ/gpTdLcwsdkhJV6X4zM3ImYfasDI1QLY5v4oH2bHpnzM2OP0MDzeaYgKb15H0iRZ0MWV4ZCdNAnmvE8CsAP+uyxIo5GsOk2nQqKDxwnxvpxQ85FFMP0mY9C9Ya/bsO4Aaov+c1enNVyPyTNpzoU0h0vlJBNR/dPteU3ZH+u7lNYfEZgp9YcDh6A+PHYHzCRmuFo6U7+4TwjicytK7FW3ZPZrhtHAULBXO+doAGb9TeGUns4JSx59SsDjUpqbktEaMW2S5YV1mxaiEp22xMqTLFOs3yQEdTj richard@araminta
+`
+
+var opensshdsa = `-----BEGIN OPENSSH PRIVATE KEY-----
+b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAABswAAAAdzc2gtZH
+NzAAAAgQD9cOml+zgtwn9zQHPdklFkHtIsxzbj0JVDtPnSUaarqRUQvf6Wr8EthGATcKC5
+7u3Q/qkZ1BWdTXdR3UvXkd5uXwH6tKiF7kgjFUkloT+Y+l/UuuoAy/BswvosaEtxXIcHgO
+Py4BYXQCMo8b4td0kUvdwCoWo2xmEwCC6AUGNo+QAAABUAzUNdg4GzlujTR6Qch3KFYVuk
+kEkAAACBAI1wIusNegOQKajDADEYwnW5bfONAclK1Dy08LwnYUljfTf40sHhRzwhDSUXYf
+CzXsr6N43x7IvKwZDbTrlzYMDf4H77YRa3pl3BzaT7XC+SOJyY+dM+hDRqG459lnXchLjg
+rQiWpVRmxxaVXjth99GPGl57XOJMr2vtmzsbdbP6AAAAgQD1GGMq8sIHbnZpjkNdLDzybH
+RnnjEcpVULr9u3V7Yb0AxWUOmlr1RweZTtpZGx5ilevjdftE/kBduCJAsCW9KKGxyOqEnK
+Ds9v876U+Kn2w48QbXu9s5rGiiqepqt/z+KKSQ1v8mc0Hl66QCN6glE6zzEq/9nM6UwZxG
+v8woEIfQAAAeidStEwnUrRMAAAAAdzc2gtZHNzAAAAgQD9cOml+zgtwn9zQHPdklFkHtIs
+xzbj0JVDtPnSUaarqRUQvf6Wr8EthGATcKC57u3Q/qkZ1BWdTXdR3UvXkd5uXwH6tKiF7k
+gjFUkloT+Y+l/UuuoAy/BswvosaEtxXIcHgOPy4BYXQCMo8b4td0kUvdwCoWo2xmEwCC6A
+UGNo+QAAABUAzUNdg4GzlujTR6Qch3KFYVukkEkAAACBAI1wIusNegOQKajDADEYwnW5bf
+ONAclK1Dy08LwnYUljfTf40sHhRzwhDSUXYfCzXsr6N43x7IvKwZDbTrlzYMDf4H77YRa3
+pl3BzaT7XC+SOJyY+dM+hDRqG459lnXchLjgrQiWpVRmxxaVXjth99GPGl57XOJMr2vtmz
+sbdbP6AAAAgQD1GGMq8sIHbnZpjkNdLDzybHRnnjEcpVULr9u3V7Yb0AxWUOmlr1RweZTt
+pZGx5ilevjdftE/kBduCJAsCW9KKGxyOqEnKDs9v876U+Kn2w48QbXu9s5rGiiqepqt/z+
+KKSQ1v8mc0Hl66QCN6glE6zzEq/9nM6UwZxGv8woEIfQAAABQTv/67ZwlFKTW+Apf9C0Kc
+iMU6ygAAABByaWNoYXJkQGFyYW1pbnRhAQ==
+-----END OPENSSH PRIVATE KEY-----
+`
+
+var opensshdsapub = `ssh-dss AAAAB3NzaC1kc3MAAACBAP1w6aX7OC3Cf3NAc92SUWQe0izHNuPQlUO0+dJRpqupFRC9/pavwS2EYBNwoLnu7dD+qRnUFZ1Nd1HdS9eR3m5fAfq0qIXuSCMVSSWhP5j6X9S66gDL8GzC+ixoS3FchweA4/LgFhdAIyjxvi13SRS93AKhajbGYTAILoBQY2j5AAAAFQDNQ12DgbOW6NNHpByHcoVhW6SQSQAAAIEAjXAi6w16A5ApqMMAMRjCdblt840ByUrUPLTwvCdhSWN9N/jSweFHPCENJRdh8LNeyvo3jfHsi8rBkNtOuXNgwN/gfvthFremXcHNpPtcL5I4nJj50z6ENGobjn2WddyEuOCtCJalVGbHFpVeO2H30Y8aXntc4kyva+2bOxt1s/oAAACBAPUYYyrywgdudmmOQ10sPPJsdGeeMRylVQuv27dXthvQDFZQ6aWvVHB5lO2lkbHmKV6+N1+0T+QF24IkCwJb0oobHI6oScoOz2/zvpT4qfbDjxBte72zmsaKKp6mq3/P4opJDW/yZzQeXrpAI3qCUTrPMSr/2czpTBnEa/zCgQh9 richard@araminta
+`
+
+var opensshecdsa = `-----BEGIN OPENSSH PRIVATE KEY-----
+b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAaAAAABNlY2RzYS
+1zaGEyLW5pc3RwMjU2AAAACG5pc3RwMjU2AAAAQQTCK9+HTQLwwZ7U3PoHOOqKoMgsMmf8
+Uq7aCsGteGBf/+dehA9i9kpQUIFEog4kuDVkxgcNLij2keBfWw6juFVkAAAAqKS8hFOkvI
+RTAAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBMIr34dNAvDBntTc
++gc46oqgyCwyZ/xSrtoKwa14YF//516ED2L2SlBQgUSiDiS4NWTGBw0uKPaR4F9bDqO4VW
+QAAAAgWHJ0UQej5Eu1UvKklBhzJQ3p4I2qyMVsnsLwpaBYeoIAAAAQcmljaGFyZEBhcmFt
+aW50YQ==
+-----END OPENSSH PRIVATE KEY-----
+`
+
+var opensshecdsapub = `ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBMIr34dNAvDBntTc+gc46oqgyCwyZ/xSrtoKwa14YF//516ED2L2SlBQgUSiDiS4NWTGBw0uKPaR4F9bDqO4VWQ= richard@araminta
+`
+
+var opensshed25519 = `-----BEGIN OPENSSH PRIVATE KEY-----
+b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW
+QyNTUxOQAAACC2A2QwRYXgohG7ueaa1OdkpAiE13LFf4eJ82Sv2YGbugAAAJjTjt5K047e
+SgAAAAtzc2gtZWQyNTUxOQAAACC2A2QwRYXgohG7ueaa1OdkpAiE13LFf4eJ82Sv2YGbug
+AAAEAvdDPQStntUKHspanRQYGlA51OGLiqCuiGF528/K1uA7YDZDBFheCiEbu55prU52Sk
+CITXcsV/h4nzZK/ZgZu6AAAAEHJpY2hhcmRAYXJhbWludGEBAgMEBQ==
+-----END OPENSSH PRIVATE KEY-----
+`
+
+var opensshed25519pub = `ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILYDZDBFheCiEbu55prU52SkCITXcsV/h4nzZK/ZgZu6 richard@araminta
+`
+
+var opensshrsapp = `-----BEGIN OPENSSH PRIVATE KEY-----
+b3BlbnNzaC1rZXktdjEAAAAACmFlczI1Ni1jdHIAAAAGYmNyeXB0AAAAGAAAABBo2U3v/B
+lKX8WcjfCVi0z5AAAAEAAAAAEAAAEXAAAAB3NzaC1yc2EAAAADAQABAAABAQDT/yjq0tSo
+30Akz//B4X+YSMEAJZOkSCP5XpTWFmz2XdogD25Mki5ePPJx1955anngRqXJMOjfqYQPGp
+gCOJfZtUmn0paQh2KY3nN7r7awb3YpXJcppSAT+OG9EmpgXEqVqe5DDoUIyyULSb717sIa
+aBn/Tm0V/J+UZzqIm5V6IgRdwr4M+vpafXr9qGDRxVSGJucEe8PgpvNAB1pbUoGqB4E/Tk
+QKwvIDt6RiHfhzE0R6dU/Bg90WnxlEgD/A/BngTJ2D9MIzMjQF7kjCYNxJRQ4WPnyOoHAq
+ilR8DVTz6wIHzBV5tvbmF8D47td7mLe4jEoTqoI8CT8Ngb2SH54XAAAD0NdK0IEOlNLQaG
+6eERIkhqaMMwdmsvcxdcYvrGzRMjXm23es/tPBAcIcAvLZa7XApPnWm/jRUYf8a2N7l1+H
+Ms/90QgIaf8wy67VGgQ/6wENLNhPlOCtIv/h0rDIKnIIHkuoGbNgaEpzMo0YTAWqfESpE5
+TeGCk5NKqwrNzzjJSs2WUPaTscrV1rqWH6euefhKPZ/0Nb7/fvVzY0Csv0H6Klfx5umNmg
+1gUvmiTX/Z/O1QQsouKHji8h3hFG3hfpUhM9VWPHaB7mOQIdpQ/CpQcaf2e/n9bAzluL+b
+vWDbIIu6FaMowQxxsLGiH3g54n67rDqjccHSEgPE5cAhtldOhpPDpwibsBfLEpS8F1YNlk
+hh0dCqwksw1E8ACVMDPUU4Pc76UF4W5MPpxOK1ODziUiOnNiBnVNPGhWTFZf5UdY7t9SXL
+LsPOiwZV1JcJPk+PnJZdms0/oKow56baSrCWYi+n7/YRNhN5INc9DsTxGOMfr1RA2ROtFM
+7NVbYdCk5Zgf3Kf1eSsUllf2Ni7vFGnxPjsEGnwPOIvSwQpayi0xPfuunoVlY2gAAe+cHK
+Lglpfefg/P1PNsY30PqbjEjC9/RHxSfD9o5YRrl+n8C+E20jlYFGDifgxDSI4C0eVitEYS
+TkHCe7WaF0xc+AXRzJCtfdAQW9zsovzMp/avGRlxcZiuekJRFK0n2BosOVKYDIVTTOJsb+
+LeTbYEQU4DbJcbeP+pFeamO6VVSIO5EW54IuBkhG+g33KJGWsdAhbOB1Q+mDhEeYZhOpbc
++4jRRKHdzZNAlHe36enOlN2jO4v4zztYy1oxgqepq77HRpMRAgdtWvK5h5UTXwrwBIOPhp
+WwZ+6Zlj/Pz9kHDpcbMHgEkfbdIDPBXr4MGEFZ6zSzNNDFF+IhkvSNib1tJuvfHb74R8QH
+geeNCsF1kA8CgyOLq8LF78gEwno49BHRVvtVJ4TLZDntSVb/nnhlAC8ODvToAyO644vP0T
+vL2oe+mtfAdVgPUusexcSrFVvQJ5YReTVrWe5WRW9UaP5mtdbOr6uoKTbh9OKzSkbfpcf9
+Fz5vPvvLX/C/6kGGUFDEpLWSzTAjkN0jsk1cQ03gY/EoC2XGM1rpNx5hGnVg93RB4ZOZWF
+SZxas4FuEpCkRQP0AoeplfqvszDinCk28t77K0iyW4KHYNF05E7Yfmz0jH47HG9p/4xnH1
+9kwI9+MAy14EF52K+PvexEk7j1z75e1cne4Jma39SmVlsf+m6Miwtsr2AIRp0PRO+K6l1P
+UowU3TG6c5XUcEs3jKI08Ybh6v59Y=
+-----END OPENSSH PRIVATE KEY-----
+`
+
+var ssh2rsa = `-----BEGIN RSA PRIVATE KEY-----
+MIIEpAIBAAKCAQEAmnk23k68f3whX2s+hvbE5Qa0cddqHGe/DK10r2FZbCWv+VGl
+1CN8DOL44KO5aZyHBgUKZZRyd6OONfkQHXlceGAMzn5urgwpSepUfP8p+FkWJ7ki
+0bHT5PPkYoKF8XrqoIS8EMe13ZQ8PiPJgVB1VCU5BJ+fEdTR0om9PWpalO/8yAIb
+DdmWXmkYpixMc1X5mFybWtcYG/sTHqozhY8DoY1UL3fsHNfHp7eqkX2gU9rWQEZp
+dWeBd/HwZVuXaV/jUKAqWJ9Xs0ONYJd+ISyimePxvNenKr3wHXOVtgDUVZbMdl79
+DwIjVaJt5z37Cw3IiyjOHYmwguVymQ6+DX9E6QIDAQABAoIBAEjbLtO/EwyVwS+9
+5ynErazPcr/Wt8dZ7zPNg6FMKt7lD5Bpv+rEKbfyPSvGTKbRGqXuLq8mSq6+x04R
+gFZGbSShOKkT3KPePIMOMHcb6fGmItrtaMy6MJRlq6wCn6X7MTowIHtRlidByQAN
+5PZGum/Ldo8FsgK4+5VvPX//72Ua59oQR6UBMaKTpInPNOgvSHPPItVdDQYJ1+9+
+RfV0eLpGa60/JbWKP/oCzqkwohrc/RPTOrD/rR4afl6PjshJD/XINRh2AHJP41y8
+2g8JXtff305KQVAjl4ZI5KoSH58vbgYollvybqQneYq52Qnc5c/fXFfJsHY7y3lZ
+599CPuECgYEAzDNKb4CuL842/D+s/57MXlDBrVWXGX7ESY9t/6FdPBcqpnqwzkFE
+tKqXmteprQz5Xo3BRgxzIT6WZf3SSjWADtM8ZNnnDZ7T/k1BEJlblsED7cJ6soW+
+NPLdvPfCcnCKanoKIdqwOyl6gi8nTY671eStY+35uK7wbVV5pQ9a7N0CgYEAwait
+HwKNnwQaADIwiATrh2kAh4RZIsgGfH3fx2XjgxMQWtJSUH0kaaJQTrP8klSnMfSK
+4b9d+MhG4ZK8hgkoEIcxwb72oSwA/tRCYOjWg3Jz26SMKr1ws64rBCInC8Q5123s
+f1W09MGlpU2Ndi4aubZ08/UbYxT4NAxlRD+zwX0CgYBa9nYwGXh+nzPrRkpATHLp
+iLveBQScPNYflp7/gthPjlpXcswT9QswF9YVCgDxr5feQPNZyu32XzUMFfd5Sz/S
+WtLKci706E2zOKLFTCt6ily/qySRJfbHC3EvXobmB7ABIoAk+JAMqruCBpNRf0W5
+UHbUzwuw82zyp2La3m44mQKBgQCXethH/FhIvQ2Vf6zEiIyvM6wNVLHgafPg5xjm
+wMUQnxXY5NEsUmbsFeGZXmI/F+ZcRftoj6by1b3T7lJ2yazEGOwLr9L8yQ3SRrfR
+U++PjDQh53kYaWxBsAfHyOsf4hKYd0xZYfIUzXBDeAEiIvgWsiiTNvOAMkPfep6v
+nuB9hQKBgQC5T9oLk3bsW2+j/1bnZV4y8DWirTSziSwu9U54IB4UCC9RB+51mG8T
+UeyzfoV41lYCmYY6nrgVO59y7dH2ourHHa0IbLOeRr6CKkwu0DfnIwQPEGnrwGhf
+6YDX8mWP+qUM3rjHcmusJK0144Y/FAaaxhwmDWml2gfg+2nMnMcBnA==
+-----END RSA PRIVATE KEY-----
+`
+
+var ssh2rsapub = `ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCaeTbeTrx/fCFfaz6G9sTlBrRx12ocZ78MrXSvYVlsJa/5UaXUI3wM4vjgo7lpnIcGBQpllHJ3o441+RAdeVx4YAzOfm6uDClJ6lR8/yn4WRYnuSLRsdPk8+RigoXxeuqghLwQx7XdlDw+I8mBUHVUJTkEn58R1NHSib09alqU7/zIAhsN2ZZeaRimLExzVfmYXJta1xgb+xMeqjOFjwOhjVQvd+wc18ent6qRfaBT2tZARml1Z4F38fBlW5dpX+NQoCpYn1ezQ41gl34hLKKZ4/G816cqvfAdc5W2ANRVlsx2Xv0PAiNVom3nPfsLDciLKM4dibCC5XKZDr4Nf0Tp richard@araminta
+`
+
+var ssh2dsa = `-----BEGIN DSA PRIVATE KEY-----
+MIIBugIBAAKBgQDv2IsYTvA9DE2RrN5tbikgo54CVNImF997wAt0I9Px+XsElIHd
+cyiAJsi59jLRu7Toy7bQnGwyz6w0CdHGDUkFtcQar0aKz5jq1wtElIcsFfC2r9bq
+WtVERQZ7PkSgECPkRlN6/ykTi8oTP3U4eZ9EaSMqXwgkSFSw6ra4bVBsjwIVANow
+PC/jxVzYSmCV/1tIMhzp11lrAoGAM8sXnm7QH0E8bNRmhyOI01z4TlObxT4ByHgE
+KtPWrCm6htYT2A1TKqpdiS69TgyVgWvIbrJ+mYnAtuuzAXzebubrButT26plcqBF
+qYermbcO6wzmmt2UnoYdq7rd5+vrzt+CCEdMVRx0Kzzu5UQLEu1VGH6qSIeumTp/
+zXlzcL4CgYBR8LDyvdVqZedWxZOFYgum1WWkOzA4DJDNhYtbYh8aQbKjUDlpn5Wd
+qgk7U5eLeqHnJzaj39rJget6ZtFGgm97epESm3E9ErkCj4BjNYGPpS31v0djFvUy
+NUxgZhg7xuDa2C+CsnjUuWXOxk2laPysO6pCozio2XM9DLiKiROpZwIUKRXrcf18
+8X0Lg4GCDFWJCkqxtzY=
+-----END DSA PRIVATE KEY-----
+`
+
+var ssh2dsapub = `ssh-dss AAAAB3NzaC1kc3MAAACBAO/YixhO8D0MTZGs3m1uKSCjngJU0iYX33vAC3Qj0/H5ewSUgd1zKIAmyLn2MtG7tOjLttCcbDLPrDQJ0cYNSQW1xBqvRorPmOrXC0SUhywV8Lav1upa1URFBns+RKAQI+RGU3r/KROLyhM/dTh5n0RpIypfCCRIVLDqtrhtUGyPAAAAFQDaMDwv48Vc2Epglf9bSDIc6ddZawAAAIAzyxeebtAfQTxs1GaHI4jTXPhOU5vFPgHIeAQq09asKbqG1hPYDVMqql2JLr1ODJWBa8husn6ZicC267MBfN5u5usG61PbqmVyoEWph6uZtw7rDOaa3ZSehh2rut3n6+vO34IIR0xVHHQrPO7lRAsS7VUYfqpIh66ZOn/NeXNwvgAAAIBR8LDyvdVqZedWxZOFYgum1WWkOzA4DJDNhYtbYh8aQbKjUDlpn5Wdqgk7U5eLeqHnJzaj39rJget6ZtFGgm97epESm3E9ErkCj4BjNYGPpS31v0djFvUyNUxgZhg7xuDa2C+CsnjUuWXOxk2laPysO6pCozio2XM9DLiKiROpZw== richard@araminta
+`
+
+var ssh2rsapp = `-----BEGIN RSA PRIVATE KEY-----
+Proc-Type: 4,ENCRYPTED
+DEK-Info: AES-128-CBC,10D86C160BC59BBFB8C51E023B8BFC9C
+
+7DKo6Uc3WdGcTuJoYBz9UBVzP2ZOievTqnMIErb4KZr9xb1DPCqmXHI2aB0+CuK7
+WUy4wk6AYpQhEFRHPqUYTB2BLkFXFjD9zgwwz9Kp6L5Hz2krOjH0+KsMq3+3smbQ
+DsdQTa99k1Vsw8/jDZkG7U8rgjJWLWI1o73Pag3ZxuMa8jwwn3XyotSlWYNYNDrF
+v/I6j84dlhtecCXsighSt00Ukx4WOMYgAzDB8Axle36uM7BdieXYMXGrkL16CyOE
+FOWXzS9In1JjkKPzrW7+Yb0QH9Iig7N9YhOu6s8hY2xFIPcKUu8BtCGzYoxRrpV2
+eQNf4sOg/16WZ6j7g76uWQEa2AQ3x75mP0HFqP/kshXMakWCx6VtOqoaEYIGB9p8
+R7dNri0xhuACnU5aYwAkesJ0zS5zRGZ1odJWKLLrLZ6a1zUJyENBYzZzOPWZCya9
+be8TehejXWhly2B9kDkYmEVNlIKFkzMJKyD4yysII8QFF6BnJ048fU2DhcFsctq1
+PLkX/GHrhChfmQysrm9WxA0CLLpTCgFUI/OUeHwI6WTunQP1M3fS9q/txf2PRfWn
+5lXqLuSj7loIocM3q7W8tzxsZPaldMrjax6/6Z5+DxN48BOvxYeNqMUrytPHDINX
+ZPNgLWGwMNrmZoyGhIsOtwMVM++K4urWf7vCZddcmhOpBKpW3CkDWVa89IywOzLb
+cwK0kK60+wRT7deo5VZLppLd4aIL5xWd+1yeUiR5BgHrjuNyBZMQ5hN7kRKP609o
+rVv/xQXPlw7kQv/LL18xmL2Mq3oQU83Kxrbo7zduhF3oOCOKJ3Dvsouh10/oBrgH
+tF81ExnqquC3/YgyLtFo+bSYLSt0DzIdj9n7ID4/P4yql96V0OspFCF8VEXiEmVv
+THtZZd2QwQADIadJMJSJtlIjXr+GEcV4ZeXscryYFYdAGPQ6L/BVmhtNp8i7CZJf
+CFRtK40A5PHY/7ZDtO15whYWp4UJVJTDfTO4bGiM1rSSFOqayf2wA1K9i5rY+vaU
+H+O0bc6cKKSEbnMisI9hmYuYaHprZHy2F/zs1d+6BzN8Dia24uRWQwxo6G6PgcvG
+YquGr+p0KpfjZNYHq5aCmLHbD3cCftjqcWdSWpCgroM4anS1eOnt1wjJOLuNLy6D
+xjg03YHE7mHEADV3CYtvkoBBws7xcw2e0KonqTQ4HBsqtpYm4XYDtD8rJsKrur4P
+Z61hO3fCRxSFBSBQlXXiALEFjSpPaasq6E7DkDpcPMH8QYpBlXjO853SNBf9dRjY
+FuAtmNr8yUVMx00vFej4WeLepTRxPI4BPQBvRFfQpfiiTkyu8uX4ntAH/O3l99vf
+oHZ5u5lrc1r6DzUE3g32wSI6p30orMuYrhKS0+GImyYPjxLu3wZPBUfAxJh5chSk
+Lt49PJirfaD53EHMnfCrm4TkAdWK10lBQZCTj/JPScGCy6bYClGLYxTkL/fdFrCA
+u3yLsiMz7+XscKiLP20FdE6qRIsHu+Z6FpWTp+IXJqGy/DNimfveKFnv/3Klid4w
+HNqARqC0CK5BfSWNFWsWhPhEl7itFFEF1ZR5iutcyim6C3jgch/fUAbQrfjCibM8
+-----END RSA PRIVATE KEY-----
+`
+
+var ssh1rsa = string([]byte{
+	0x53, 0x53, 0x48, 0x20, 0x50, 0x52, 0x49, 0x56, 0x41, 0x54, 0x45, 0x20,
+	0x4b, 0x45, 0x59, 0x20, 0x46, 0x49, 0x4c, 0x45, 0x20, 0x46, 0x4f, 0x52,
+	0x4d, 0x41, 0x54, 0x20, 0x31, 0x2e, 0x31, 0x0a, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x08, 0x00, 0x08, 0x00, 0xc9, 0xc4, 0x59, 0xa0,
+	0x43, 0x92, 0x40, 0xfd, 0xf6, 0xca, 0x8e, 0xc3, 0x91, 0x3e, 0xcc, 0xd1,
+	0x5b, 0x7a, 0x5c, 0xbf, 0x51, 0x2a, 0xe1, 0x93, 0xbb, 0x49, 0xb4, 0x12,
+	0x3b, 0xfc, 0x6d, 0xda, 0x6f, 0x40, 0x3f, 0x5c, 0xcb, 0x62, 0xd6, 0xca,
+	0xc6, 0x9b, 0xda, 0xe8, 0x7a, 0x2b, 0x9b, 0x0d, 0xbe, 0x1c, 0x76, 0x6f,
+	0x3d, 0x7a, 0xcd, 0x60, 0x3b, 0x8a, 0x66, 0xe9, 0x0c, 0x15, 0xda, 0xfc,
+	0x97, 0x39, 0x91, 0xe7, 0x8b, 0xf7, 0xcb, 0x1d, 0xf7, 0x11, 0xa0, 0x2f,
+	0x1f, 0xac, 0xc1, 0x10, 0xc2, 0xf4, 0x80, 0x4b, 0x1f, 0x15, 0x51, 0xb7,
+	0x3a, 0xba, 0x92, 0x0e, 0xa5, 0x6e, 0x91, 0x57, 0x05, 0x93, 0x48, 0xa6,
+	0x39, 0x1d, 0x60, 0xa8, 0xf7, 0x44, 0x59, 0xb9, 0xe6, 0xb1, 0xe1, 0x47,
+	0xb2, 0x32, 0xe4, 0xd4, 0xa2, 0x1f, 0x70, 0x1c, 0x8b, 0x82, 0x82, 0xaa,
+	0xa6, 0xbf, 0x63, 0x62, 0xb5, 0x2c, 0xdc, 0x8d, 0x08, 0xce, 0x39, 0xe0,
+	0xf8, 0xe9, 0xe7, 0x16, 0xad, 0x68, 0xef, 0x6e, 0x4d, 0x28, 0xf6, 0x08,
+	0x69, 0x18, 0x90, 0xe6, 0x0c, 0x17, 0x46, 0x19, 0x4e, 0x43, 0x55, 0xbf,
+	0x3f, 0x4f, 0xe0, 0xcd, 0xcb, 0xec, 0xd6, 0xf0, 0xbd, 0x89, 0xe0, 0xf4,
+	0x98, 0x95, 0x60, 0x91, 0x69, 0x34, 0x0a, 0x91, 0x81, 0x42, 0xc0, 0x45,
+	0x00, 0x38, 0xf9, 0xa2, 0xb2, 0x8a, 0x40, 0xfe, 0x4b, 0x46, 0x2f, 0x5e,
+	0xad, 0xa5, 0xd4, 0xed, 0x01, 0x77, 0xac, 0x9c, 0x91, 0x22, 0xe4, 0x72,
+	0xab, 0xc1, 0x8d, 0x1c, 0xfd, 0xd3, 0xf2, 0xd6, 0x16, 0x98, 0x57, 0xe8,
+	0x75, 0xcc, 0x7d, 0x05, 0x61, 0x39, 0xe7, 0x0d, 0xce, 0x3a, 0xae, 0xda,
+	0xa9, 0xb0, 0xfb, 0x53, 0x4b, 0xb5, 0xb1, 0x6d, 0x25, 0x1b, 0x57, 0x12,
+	0x32, 0xd3, 0x8f, 0x85, 0x8c, 0x58, 0x7f, 0x44, 0x91, 0x2d, 0xf5, 0x0f,
+	0x00, 0x11, 0x01, 0x00, 0x01, 0x00, 0x00, 0x00, 0x10, 0x72, 0x69, 0x63,
+	0x68, 0x61, 0x72, 0x64, 0x40, 0x61, 0x72, 0x61, 0x6d, 0x69, 0x6e, 0x74,
+	0x61, 0xc4, 0xc6, 0xc4, 0xc6, 0x08, 0x00, 0xa3, 0x23, 0x8d, 0xcc, 0x55,
+	0x96, 0x65, 0xd2, 0x72, 0xbf, 0x69, 0x1b, 0x9b, 0xcf, 0x09, 0x50, 0xa6,
+	0x04, 0x94, 0x05, 0x65, 0x1d, 0xa4, 0xf3, 0x0c, 0x56, 0x15, 0xb1, 0x40,
+	0xab, 0x64, 0x2f, 0x60, 0x10, 0xb4, 0xaa, 0xd5, 0x10, 0x7f, 0xd7, 0xc9,
+	0x2a, 0xaf, 0x9f, 0x95, 0x58, 0xb8, 0xb0, 0x2d, 0xed, 0x59, 0x9d, 0xac,
+	0x3a, 0x24, 0xe1, 0x10, 0x83, 0x61, 0x9e, 0x41, 0x55, 0x52, 0x91, 0x35,
+	0xbd, 0x28, 0xc9, 0xed, 0x94, 0x57, 0xb9, 0x4c, 0xd2, 0x05, 0x90, 0xd4,
+	0xad, 0x9c, 0x15, 0x6f, 0x6c, 0xbe, 0x66, 0xff, 0x24, 0xff, 0xc3, 0x85,
+	0x4a, 0xe1, 0x59, 0xd2, 0x4d, 0x4a, 0x5a, 0xf0, 0x79, 0x1c, 0x1e, 0xba,
+	0xc3, 0x94, 0x2a, 0x4a, 0x74, 0x0b, 0x90, 0x92, 0x85, 0x75, 0x3f, 0xc1,
+	0x48, 0x01, 0x5a, 0x24, 0x14, 0x03, 0x54, 0x31, 0x41, 0x3f, 0x61, 0xb8,
+	0x1d, 0xbb, 0xbe, 0xdc, 0x1d, 0x06, 0x98, 0xce, 0xa7, 0x09, 0xdc, 0x21,
+	0x9c, 0xd4, 0x84, 0x25, 0xcb, 0x0b, 0x01, 0xec, 0x18, 0xc5, 0x19, 0x95,
+	0xbf, 0x6b, 0xaa, 0x05, 0xb2, 0x3a, 0x3c, 0x32, 0xa8, 0xc0, 0x98, 0x49,
+	0x5f, 0x9b, 0xe8, 0xa2, 0x91, 0x44, 0xa4, 0x7d, 0xfd, 0xa2, 0xb8, 0x16,
+	0x56, 0x12, 0xc4, 0x2c, 0x4d, 0x37, 0xb7, 0xc9, 0xe3, 0x9a, 0x1d, 0x66,
+	0xb3, 0x8c, 0x02, 0x14, 0xc3, 0x43, 0xee, 0x1f, 0x74, 0xbc, 0xcf, 0xe4,
+	0x44, 0xbc, 0xfd, 0xdd, 0x3d, 0x8c, 0x9d, 0xa7, 0x1b, 0x3b, 0x11, 0x2b,
+	0x6d, 0x71, 0xad, 0x78, 0xd7, 0x69, 0x16, 0xd7, 0x10, 0xdb, 0xd3, 0x2f,
+	0x2e, 0x35, 0x52, 0xbc, 0x4d, 0xde, 0x95, 0xaf, 0x23, 0x1d, 0x00, 0xfa,
+	0xa7, 0x95, 0x45, 0x85, 0x11, 0x51, 0xbd, 0x7c, 0x7e, 0x28, 0x03, 0xc3,
+	0xfa, 0x7f, 0x3a, 0xdf, 0x7d, 0xbb, 0x25, 0x06, 0xa0, 0xc2, 0x31, 0x03,
+	0xfc, 0x0a, 0x20, 0x13, 0x48, 0xf2, 0xb2, 0xdf, 0xec, 0x69, 0xae, 0x45,
+	0x8b, 0x9d, 0x99, 0x83, 0x29, 0x74, 0xb9, 0x7b, 0xad, 0x8b, 0x93, 0xd5,
+	0x07, 0x03, 0x50, 0x48, 0xd7, 0xf9, 0x2c, 0xce, 0x72, 0xd8, 0x2d, 0x9d,
+	0x75, 0xf0, 0xb1, 0x80, 0xa3, 0xb7, 0xdd, 0xba, 0x0b, 0x85, 0xf8, 0x06,
+	0xe2, 0x3f, 0xda, 0x10, 0xfb, 0x7a, 0x10, 0xbe, 0x6d, 0x91, 0x59, 0x57,
+	0x5d, 0xed, 0xba, 0x35, 0x2d, 0x66, 0x6f, 0x15, 0xae, 0x9e, 0x56, 0xdb,
+	0xe7, 0xfd, 0x5d, 0xfb, 0x52, 0x0c, 0x04, 0xb6, 0xee, 0xd2, 0x07, 0x97,
+	0x2c, 0xbe, 0xaa, 0xce, 0x28, 0x07, 0x1d, 0x60, 0xa8, 0xe7, 0xb7, 0x1b,
+	0x29, 0x47, 0xcb, 0xe1, 0xdb, 0x11, 0xeb, 0x1f, 0xa1, 0x99, 0x67, 0x12,
+	0x7f, 0x4c, 0x25, 0x52, 0x63, 0xa2, 0xca, 0x9d, 0xd4, 0x27, 0x5c, 0xa2,
+	0x57, 0x99, 0xa3, 0x71, 0x4f, 0x3e, 0x54, 0x53, 0xe8, 0x04, 0x00, 0xcb,
+	0x07, 0xba, 0xff, 0x53, 0x41, 0xb5, 0xad, 0x53, 0x39, 0xa4, 0xc9, 0xf7,
+	0xeb, 0x6a, 0x8b, 0x47, 0x90, 0x50, 0xec, 0x90, 0xbd, 0x21, 0x4b, 0x61,
+	0x94, 0xf4, 0x30, 0x36, 0xee, 0xf1, 0x73, 0x47, 0xf7, 0x0c, 0x09, 0xb3,
+	0xad, 0xd3, 0x9d, 0x9a, 0x7d, 0x76, 0xe6, 0xac, 0x69, 0x6f, 0x7e, 0x4c,
+	0x18, 0x35, 0x11, 0x7b, 0x0c, 0x6b, 0x49, 0x08, 0x8f, 0xfd, 0xcd, 0xee,
+	0xef, 0xd2, 0x25, 0xeb, 0xdc, 0xc4, 0xe5, 0xd4, 0x04, 0x77, 0xa4, 0xdd,
+	0x8c, 0xb7, 0x48, 0x9a, 0xb9, 0x16, 0x03, 0x29, 0xab, 0x2f, 0x8b, 0xd5,
+	0x2d, 0x12, 0x1f, 0x09, 0xc9, 0x4f, 0x65, 0x4a, 0x14, 0x5c, 0x3a, 0xf1,
+	0xd8, 0x5b, 0x7d, 0x6c, 0xb0, 0x6d, 0xdf, 0xb5, 0x3a, 0x83, 0xcf, 0x69,
+	0xef, 0x4f, 0x05, 0xcb, 0x97, 0x96, 0xbd, 0x05, 0x58, 0x59, 0xd1, 0x7f,
+	0xf9, 0xcf, 0x41, 0x80, 0x16, 0x67, 0x55, 0x04, 0x00, 0xfe, 0x68, 0x40,
+	0x3d, 0xd3, 0x62, 0xf2, 0x78, 0x85, 0x9d, 0x72, 0x30, 0xc1, 0x34, 0x6e,
+	0x2a, 0x93, 0x24, 0xe7, 0xc4, 0x3e, 0x58, 0xb4, 0x53, 0x0d, 0x8b, 0x9f,
+	0xff, 0x94, 0x95, 0xf9, 0x05, 0xa0, 0x22, 0xf0, 0x57, 0x3a, 0x78, 0x5a,
+	0x30, 0x68, 0x6c, 0x27, 0x51, 0xa3, 0xca, 0x94, 0x7d, 0x82, 0x3a, 0x02,
+	0x4a, 0x08, 0xa6, 0x69, 0xd9, 0x89, 0x7c, 0xb2, 0xcb, 0xdc, 0x88, 0xee,
+	0x70, 0x01, 0x2c, 0x14, 0x36, 0xed, 0xea, 0xfb, 0xf8, 0x8a, 0xbe, 0xeb,
+	0x2f, 0xbf, 0xfd, 0xd4, 0x99, 0x1e, 0xf0, 0xc8, 0xab, 0x08, 0x1a, 0xf5,
+	0xb5, 0xb4, 0xcc, 0x14, 0xfc, 0x6f, 0xaa, 0xb1, 0xf8, 0x6d, 0xd0, 0x16,
+	0x0b, 0x78, 0x18, 0xf1, 0xcc, 0x51, 0x30, 0x2c, 0xb9, 0x72, 0x91, 0x91,
+	0x20, 0x4f, 0xe2, 0x17, 0x2f, 0xc6, 0x7b, 0x20, 0x6b, 0xa7, 0xd7, 0x67,
+	0x6d, 0x06, 0x07, 0xa2, 0xd3, 0x00, 0x00, 0x00, 0x00,
+})
+
+var ssh1rsapub = `2048 65537 25470723141992149793889177325155075033065266887209907555212423272196382728872799053708756873477633978116175006600119293381976869271654167454810265246158849247976957342146034004690755665740203706558626736215002931536563073239137953971054814483107199358670218799163171055559575273414655601385511078733494040856192604566205431482048920494027500561712299923128752748949060481611755074201360244423343306276602451876992958444912080153136596344869531541364259938382920167757579838465836976074247048461321440314044336926769003600425746786077071724949948629215428603324893841501704961039245559248131563544438846329367168939279 richard@araminta
+`
+
 var rsa1024 *rsa.PrivateKey
 var ecdsa384 *ecdsa.PrivateKey
+var dsa2048 *dsa.PrivateKey
+var ed25519key ed25519.PrivateKey
 
 func generateTestKeys() {
 	var err error
@@ -421,6 +709,19 @@ func generateTestKeys() {
 		}
 		if ecdsa384, err = ecdsa.GenerateKey(elliptic.P384(), rand.Reader); err != nil {
 			log.Panicf("ecdsa.GenerateKey: %v", err)
+		}
+		dsa2048 = &dsa.PrivateKey{}
+		dsa2048.P = big.NewInt(0)
+		dsa2048.P.SetString("efd88b184ef03d0c4d91acde6d6e2920a39e0254d22617df7bc00b7423d3f1f97b049481dd73288026c8b9f632d1bbb4e8cbb6d09c6c32cfac3409d1c60d4905b5c41aaf468acf98ead70b4494872c15f0b6afd6ea5ad54445067b3e44a01023e446537aff29138bca133f7538799f4469232a5f08244854b0eab6b86d506c8f", 16)
+		dsa2048.Q = big.NewInt(0)
+		dsa2048.Q.SetString("da303c2fe3c55cd84a6095ff5b48321ce9d7596b", 16)
+		dsa2048.G = big.NewInt(0)
+		dsa2048.G.SetString("33cb179e6ed01f413c6cd466872388d35cf84e539bc53e01c878042ad3d6ac29ba86d613d80d532aaa5d892ebd4e0c95816bc86eb27e9989c0b6ebb3017cde6ee6eb06eb53dbaa6572a045a987ab99b70eeb0ce69add949e861dabbadde7ebebcedf8208474c551c742b3ceee5440b12ed55187eaa4887ae993a7fcd797370be", 16)
+		if err = dsa.GenerateKey(dsa2048, rand.Reader); err != nil {
+			log.Panicf("ecdsa.GenerateKey: %v", err)
+		}
+		if _, ed25519key, err = ed25519.GenerateKey(rand.Reader); err != nil {
+			log.Panicf("ed25519.GenerateKey: %v", err)
 		}
 	}
 }

@@ -2,7 +2,9 @@ package keyremix
 
 import (
 	"bytes"
+	"crypto/dsa"
 	"crypto/ecdsa"
+	"crypto/ed25519"
 	"crypto/rsa"
 	"fmt"
 	"math/big"
@@ -65,6 +67,23 @@ func (p *text) Serialize(key interface{}, args map[string]string) (output []byte
 		values = append(values, value{"curve", k.Params().Name})
 		values = append(values, value{"x", k.X})
 		values = append(values, value{"y", k.Y})
+	case *dsa.PrivateKey:
+		values = append(values, value{"p", k.P})
+		values = append(values, value{"q", k.Q})
+		values = append(values, value{"g", k.G})
+		values = append(values, value{"X", k.X})
+		values = append(values, value{"Y", k.Y})
+	case *dsa.PublicKey:
+		values = append(values, value{"p", k.P})
+		values = append(values, value{"q", k.Q})
+		values = append(values, value{"g", k.G})
+		values = append(values, value{"Y", k.Y})
+	case ed25519.PrivateKey:
+		// Use RFC8032 naming
+		values = append(values, value{"k", k.Seed()})
+		values = append(values, value{"ENC(A)", []byte(k.Public().(ed25519.PublicKey))})
+	case ed25519.PublicKey:
+		values = append(values, value{"ENC(A)", []byte(k)})
 	default:
 		err = ErrUnsuitableKeyType
 		return
@@ -84,6 +103,10 @@ func (p *text) Serialize(key interface{}, args map[string]string) (output []byte
 			}
 		case int:
 			if _, err = fmt.Fprintf(f, format, v); err != nil {
+				return
+			}
+		case []byte:
+			if _, err = fmt.Fprintf(f, "%x", v); err != nil {
 				return
 			}
 		default:

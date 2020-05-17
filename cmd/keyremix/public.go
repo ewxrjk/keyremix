@@ -1,9 +1,12 @@
 package main
 
 import (
+	"crypto/dsa"
 	"crypto/ecdsa"
+	"crypto/ed25519"
 	"crypto/rsa"
 	"fmt"
+
 	"github.com/spf13/cobra"
 	"github.com/thales-e-security/keyremix"
 )
@@ -38,19 +41,23 @@ var publicCmd = &cobra.Command{
 			key = k.Public()
 		case *ecdsa.PrivateKey:
 			key = k.Public()
-		case *rsa.PublicKey, *ecdsa.PublicKey:
+		case *dsa.PrivateKey:
+			key = &k.PublicKey
+		case *ed25519.PrivateKey:
+			key = k.Public()
+		case *rsa.PublicKey, *ecdsa.PublicKey, *dsa.PublicKey, *ed25519.PublicKey:
 			// Nothing
 		default:
 			err = fmt.Errorf("%s: unrecognized key type %T", inputPath, key)
 		}
 		// Try to set a default output format based on the input
 		// - DER inputs yield DER outputs
-		// - In a PKCS#1 or JOSE world, stay there
+		// - In a PKCS#1, JOSE or SSH world, stay there
 		// - Otherwise choose PKIX
 		if outputFormat == "" {
 			inputFormat = format.Name()
 			switch inputFormat {
-			case "pkcs1", "pkcs1der":
+			case "pkcs1", "pkcs1der", "ssh":
 				outputFormat = inputFormat
 			case "jwk":
 				outputFormat = "jwk"

@@ -121,6 +121,14 @@ X.509 certificate format.
 * Only usable as an input format.
 * Only RSA and ECDSA public keys can be used.
 
+### `ssh1`, `ssh2`, `openssh`
+
+[OpenSSH](https://www.openssh.com/) key formats.
+* `ssh1` is the (very obsolete) SSH v1 format. Only RSA is supported.
+* `ssh2` corresponds to OpenSSH up to version 6.4. RSA, DSA and ECDSA are supported.
+Keys with a passphrase can be read (use `-F password=STRING`) but not written.
+* `openssh` corresponds to OpenSSH since version 6.5. RSA, ECDSA and Ed25519 are supported. DSA can be written but not read.
+
 # General Remarks
 
 * The set of key types and formats reflects what is easy to do with Go.

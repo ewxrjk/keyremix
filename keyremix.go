@@ -53,6 +53,9 @@ type KeyFormat interface {
 // or in some cases when the input is not recognizable.
 var ErrUnsuitableKeyType = errors.New("unsuitable key type")
 
+// ErrCannotParseKey is returned when a key file cannot be returned.
+var ErrCannotParseKey = errors.New("cannot parse key")
+
 // ErrPasswordRequired is returned when a password is required.
 var ErrPasswordRequired = errors.New("password required")
 
